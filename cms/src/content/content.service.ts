@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Op, type WhereOptions } from 'sequelize';
+import { getPagination } from '../utils/pagination';
 import { Content, type ContentAttributes } from './models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';
 import { FindAllContentDto } from './dto/find-all-content.dto';
@@ -26,9 +27,7 @@ export class ContentService {
   }
 
   async findAll(query: FindAllContentDto) {
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.min(100, Math.max(1, query.limit ?? 20));
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPagination(query);
 
     const where: WhereOptions<ContentAttributes> = {};
 
@@ -66,7 +65,7 @@ export class ContentService {
     const content = await this.findById(id);
     await content.update({
       ...input,
-      ...(input.tags ? { tags: input.tags } : {}),
+      tags: input.tags ?? content.tags,
     });
     return content;
   }

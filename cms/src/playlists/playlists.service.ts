@@ -1,6 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Op, type WhereOptions } from 'sequelize';
 import { Content } from '../content/models/content.model';
+import { getPagination } from '../utils/pagination';
 import { FindAllPlaylistsDto } from './dto/find-all-playlists.dto';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { UpdatePlaylistDto } from './dto/update-playlist.dto';
@@ -22,9 +27,7 @@ export class PlaylistsService {
   }
 
   async findAll(query: FindAllPlaylistsDto) {
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.min(100, Math.max(1, query.limit ?? 20));
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPagination(query);
 
     const where: WhereOptions<PlaylistAttributes> = {};
     if (query.search) {
@@ -44,14 +47,9 @@ export class PlaylistsService {
 
   async findById(id: string, withContents = false) {
     const playlist = await Playlist.findByPk(id, {
-      include: withContents
-        ? [
-            {
-              model: Content,
-              through: { attributes: [] },
-            },
-          ]
-        : undefined,
+      ...(withContents
+        ? { include: [{ model: Content, where: { isDeleted: false } }] }
+        : {}),
     });
 
     if (!playlist) throw new NotFoundException('Playlist not found');
@@ -74,7 +72,8 @@ export class PlaylistsService {
     await this.findById(playlistId, false);
     const content = await Content.findByPk(contentId);
     if (!content) throw new NotFoundException('Content not found');
-    if (content.isDeleted) throw new BadRequestException('Cannot add deleted content');
+    if (content.isDeleted)
+      throw new BadRequestException('Cannot add deleted content');
 
     await PlaylistContent.findOrCreate({
       where: { playlistId, contentId },
@@ -87,7 +86,9 @@ export class PlaylistsService {
   async removeContent(playlistId: string, contentId: string) {
     await this.findById(playlistId, false);
 
-    const deleted = await PlaylistContent.destroy({ where: { playlistId, contentId } });
+    const deleted = await PlaylistContent.destroy({
+      where: { playlistId, contentId },
+    });
 
     return { playlistId, contentId, removed: deleted > 0 };
   }
