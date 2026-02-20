@@ -1,29 +1,31 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Op, type WhereOptions } from 'sequelize';
+import { Op, Sequelize, type WhereOptions } from 'sequelize';
 import { getPagination } from '../utils/pagination';
 import { Content, type ContentAttributes } from './models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';
 import { FindAllContentDto } from './dto/find-all-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
+import { OutboxService } from '../outbox/outbox.service';
 
 @Injectable()
 export class ContentService {
-  constructor() {}
+  constructor(
+    private readonly sequelize: Sequelize,
+    private readonly outboxService: OutboxService,
+  ) {}
 
   async create(input: CreateContentDto) {
-    return Content.create(
-      {
-        title: input.title,
-        description: input.description,
-        tags: input.tags ?? [],
-        mediaType: input.mediaType,
-        mediaUrl: input.mediaUrl,
-        processingStatus: input.processingStatus ?? 'pending',
-        isDeleted: input.isDeleted ?? false,
-        metadata: input.metadata,
-      },
-      {},
-    );
+    return this.sequelize.transaction(async (transaction) => {
+      const content = await Content.create(input, { transaction });
+      
+      await this.outboxService.addEvent(
+        'content.created',
+        content.toJSON(),
+        transaction,
+      );
+
+      return content;
+    });
   }
 
   async findAll(query: FindAllContentDto) {
@@ -62,17 +64,36 @@ export class ContentService {
   }
 
   async update(id: string, input: UpdateContentDto) {
-    const content = await this.findById(id);
-    await content.update({
-      ...input,
-      tags: input.tags ?? content.tags,
+    const oldContent = await this.findById(id);
+
+    return this.sequelize.transaction(async (transaction) => {
+      const newContent = await oldContent.update({
+        ...input,
+        tags: input.tags ?? oldContent.tags,
+      });
+      
+      await this.outboxService.addEvent(
+        'content.updated',
+        { id, before: oldContent.toJSON(), after: newContent.toJSON() },
+        transaction,
+      );
+      
+      return newContent;
     });
-    return content;
   }
 
   async softDelete(id: string) {
     const content = await this.findById(id);
-    await content.update({ isDeleted: true });
-    return { id, isDeleted: true };
+    return this.sequelize.transaction(async (transaction) => {
+      await content.update({ isDeleted: true });
+      
+      await this.outboxService.addEvent(
+        'content.deleted',
+        { id },
+        transaction,
+      );
+      
+      return { id, isDeleted: true };
+    });
   }
 }

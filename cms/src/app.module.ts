@@ -7,6 +7,10 @@ import { PlaylistContent } from './playlists/models/playlist-content.model';
 import { ContentModule } from './content/content.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { config } from './config/config';
+import { UploadModule } from './upload/upload.module';
+import { KafkaModule } from './kafka/kafka.module';
+import { OutboxModule } from './outbox/outbox.module';
+import { OutboxEvent } from './outbox/models/outbox.model'
 
 @Module({
   imports: [
@@ -19,11 +23,14 @@ import { config } from './config/config';
       database: config.db.name,
       autoLoadModels: true,
       synchronize: false,
-      models: [Content, Playlist, PlaylistContent],
+      models: [Content, Playlist, PlaylistContent, OutboxEvent],
       logging: false,
     }),
     ContentModule,
     PlaylistsModule,
+    UploadModule,
+    KafkaModule,
+    OutboxModule,
   ],
   controllers: [AppController],
   providers: [],

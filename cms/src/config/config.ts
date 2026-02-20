@@ -7,4 +7,8 @@ export const config = {
     password: process.env.DB_PASSWORD ?? 'postgres',
     name: process.env.DB_NAME ?? 'cms',
   },
+  kafka: {
+    brokers: (process.env.KAFKA_BROKERS ?? 'localhost:9092').split(','),
+    clientId: process.env.KAFKA_CLIENT_ID ?? 'cms',
+  },
 } as const;
