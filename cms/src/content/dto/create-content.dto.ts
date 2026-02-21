@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MediaType } from '../models/content.model'
 
 export class CreateContentDto {
   @ApiProperty({ type: String })
@@ -26,10 +28,10 @@ export class CreateContentDto {
   @IsString({ each: true })
   tags?: string[];
 
-  @ApiProperty({ type: String })
-  @IsString()
+  @ApiProperty({ enum: MediaType })
+  @IsEnum(MediaType)
   @IsNotEmpty()
-  mediaType!: string;
+  mediaType!: MediaType;
 
   @ApiProperty({ type: String })
   @IsString()
@@ -37,18 +39,13 @@ export class CreateContentDto {
   @IsUrl({ require_tld: false })
   mediaUrl!: string;
 
-  @ApiPropertyOptional({ type: String })
-  @IsOptional()
-  @IsString()
-  processingStatus?: string;
-
   @ApiPropertyOptional({ type: Boolean })
   @IsOptional()
   @IsBoolean()
-  isDeleted?: boolean;
+  isExternal?: boolean;
 
   @ApiPropertyOptional({ type: Object })
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, unknown>;
+  externalMetadata?: Record<string, unknown>;
 }

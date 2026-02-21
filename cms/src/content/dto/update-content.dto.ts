@@ -6,7 +6,8 @@ import {
   IsString,
   IsUrl,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MediaType } from '../models/content.model'
 
 export class UpdateContentDto {
   @ApiPropertyOptional({ type: String })
@@ -25,29 +26,20 @@ export class UpdateContentDto {
   @IsString({ each: true })
   tags?: string[];
 
-  @ApiPropertyOptional({ type: String })
+  @ApiPropertyOptional({ enum: MediaType })
   @IsOptional()
   @IsString()
-  mediaType?: string;
+  mediaType?: MediaType;
 
   @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
   @IsUrl({ require_tld: false })
   mediaUrl?: string;
+}
 
-  @ApiPropertyOptional({ type: String })
-  @IsOptional()
-  @IsString()
-  processingStatus?: string;
-
-  @ApiPropertyOptional({ type: Boolean })
-  @IsOptional()
-  @IsBoolean()
-  isDeleted?: boolean;
-
-  @ApiPropertyOptional({ type: Object })
-  @IsOptional()
+export class MarkAsProcessedDto {
+  @ApiProperty({ type: Object })
   @IsObject()
-  metadata?: Record<string, unknown>;
+  processingMetadata: Record<string, unknown>;
 }

@@ -4,7 +4,7 @@ import { getPagination } from '../utils/pagination';
 import { Content, type ContentAttributes } from './models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';
 import { FindAllContentDto } from './dto/find-all-content.dto';
-import { UpdateContentDto } from './dto/update-content.dto';
+import { MarkAsProcessedDto, UpdateContentDto } from './dto/update-content.dto';
 import { OutboxService } from '../outbox/outbox.service';
 
 @Injectable()
@@ -16,8 +16,14 @@ export class ContentService {
 
   async create(input: CreateContentDto) {
     return this.sequelize.transaction(async (transaction) => {
-      const content = await Content.create(input, { transaction });
-      
+      const content = await Content.create(
+        {
+          ...input,
+          isMediaProcessed: input.isExternal, // External content doesn't need to be processed
+        },
+        { transaction },
+      );
+
       await this.outboxService.addEvent(
         'content.created',
         content.toJSON(),
@@ -36,10 +42,10 @@ export class ContentService {
     if (!query.includeDeleted) where.isDeleted = false;
 
     if (query.mediaType) where.mediaType = query.mediaType;
-    if (query.processingStatus) where.processingStatus = query.processingStatus;
+    if (query.isMediaProcessed) where.isMediaProcessed = query.isMediaProcessed;
 
     if (query.tag) {
-      where.tags = { [Op.contains]: [query.tag] } as unknown as ContentAttributes['tags'];
+      where.tags = { [Op.contains]: [query.tag] };
     }
 
     if (query.search) {
@@ -71,13 +77,35 @@ export class ContentService {
         ...input,
         tags: input.tags ?? oldContent.tags,
       });
-      
+
       await this.outboxService.addEvent(
         'content.updated',
         { id, before: oldContent.toJSON(), after: newContent.toJSON() },
         transaction,
       );
-      
+
+      return newContent;
+    });
+  }
+
+  async markAsProcessed(
+    id: string,
+    input: MarkAsProcessedDto,
+  ) {
+    const oldContent = await this.findById(id);
+
+    return this.sequelize.transaction(async (transaction) => {
+      const newContent = await oldContent.update({
+        isMediaProcessed: true,
+        processingMetadata: input.processingMetadata,
+      });
+
+      await this.outboxService.addEvent(
+        'content.updated',
+        { id, before: oldContent.toJSON(), after: newContent.toJSON() },
+        transaction,
+      );
+
       return newContent;
     });
   }
@@ -86,13 +114,9 @@ export class ContentService {
     const content = await this.findById(id);
     return this.sequelize.transaction(async (transaction) => {
       await content.update({ isDeleted: true });
-      
-      await this.outboxService.addEvent(
-        'content.deleted',
-        { id },
-        transaction,
-      );
-      
+
+      await this.outboxService.addEvent('content.deleted', { id }, transaction);
+
       return { id, isDeleted: true };
     });
   }

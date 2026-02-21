@@ -10,7 +10,7 @@ import {
 import { ContentService } from './content.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { FindAllContentDto } from './dto/find-all-content.dto';
-import { UpdateContentDto } from './dto/update-content.dto';
+import { MarkAsProcessedDto, UpdateContentDto } from './dto/update-content.dto';
 
 @ApiTags('contents')
 @Controller('contents')
@@ -50,6 +50,16 @@ export class ContentController {
   @ApiResponse({ status: 404 })
   update(@Param('id') id: string, @Body() body: UpdateContentDto) {
     return this.contentService.update(id, body);
+  }
+
+  @Patch(':id/mark-as-processed')
+  @ApiOperation({ summary: 'Mark as Processed' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: MarkAsProcessedDto })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
+  markAsProcessed(@Param('id') id: string, @Body() body: MarkAsProcessedDto) {
+    return this.contentService.markAsProcessed(id, body);
   }
 
   @Delete(':id')

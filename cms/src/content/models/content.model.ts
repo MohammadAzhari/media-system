@@ -19,18 +19,27 @@ export type ContentAttributes = {
   title: string;
   description?: string;
   tags: string[];
-  mediaType: string;
+  mediaType: MediaType;
   mediaUrl: string;
-  processingStatus: string;
   isDeleted: boolean;
-  metadata?: Record<string, unknown>;
+  isExternal: boolean;
+  isMediaProcessed: boolean;
+  language?: string;
+  processingMetadata?: Record<string, unknown>;
+  externalSource?: string;
+  externalMetadata?: Record<string, unknown>;
   createdAt?: Date;
   updatedAt?: Date;
 };
 
+export enum MediaType {
+  VIDEO = 'video',
+  AUDIO = 'audio',
+}
+
 export type ContentCreationAttributes = Optional<
   ContentAttributes,
-  'id' | 'tags' | 'processingStatus' | 'isDeleted' | 'metadata'
+  'id' | 'tags' | 'isDeleted' | 'isExternal' | 'isMediaProcessed'
 >;
 
 @Table({
@@ -57,16 +66,21 @@ export class Content extends Model<ContentAttributes, ContentCreationAttributes>
 
   @AllowNull(false)
   @Column(DataType.STRING)
-  declare mediaType: string;
+  declare mediaType: MediaType;
 
   @AllowNull(false)
   @Column(DataType.TEXT)
   declare mediaUrl: string;
 
   @AllowNull(false)
-  @Default('pending')
-  @Column(DataType.STRING)
-  declare processingStatus: string;
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  declare isExternal: boolean;
+
+  @AllowNull(false)
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  declare isMediaProcessed: boolean;
 
   @AllowNull(false)
   @Default(false)
@@ -74,8 +88,20 @@ export class Content extends Model<ContentAttributes, ContentCreationAttributes>
   declare isDeleted: boolean;
 
   @AllowNull(true)
+  @Column(DataType.STRING)
+  declare language?: string;
+
+  @AllowNull(true)
   @Column(DataType.JSONB)
-  declare metadata?: Record<string, unknown>;
+  declare processingMetadata?: Record<string, unknown>;
+
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  declare externalSource?: string;
+
+  @AllowNull(true)
+  @Column(DataType.JSONB)
+  declare externalMetadata?: Record<string, unknown>;
 
   @CreatedAt
   @Column(DataType.DATE)

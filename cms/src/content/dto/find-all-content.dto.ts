@@ -42,10 +42,11 @@ export class FindAllContentDto {
   @IsString()
   mediaType?: string;
 
-  @ApiPropertyOptional({ type: String })
+  @ApiPropertyOptional({ type: Boolean })
   @IsOptional()
-  @IsString()
-  processingStatus?: string;
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isMediaProcessed?: boolean;
 
   @ApiPropertyOptional({ type: String })
   @IsOptional()
