@@ -3,12 +3,20 @@ package handler
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/MohammadAzhari/media-system/media-processor/services"
 )
 
-type ContentCreatedHandler struct{}
+type ContentCreatedHandler struct{
+	CMSService *services.CMSService
+}
 
 type ContentCreatedEvent struct {
-	ID string `json:"id"`
+	ContentData
+}
+
+func NewContentCreatedHandler(cmsService *services.CMSService) *ContentCreatedHandler {
+	return &ContentCreatedHandler{CMSService: cmsService}
 }
 
 func (h *ContentCreatedHandler) Process(ctx context.Context, msg []byte) error {
@@ -17,5 +25,9 @@ func (h *ContentCreatedHandler) Process(ctx context.Context, msg []byte) error {
 		return err
 	}
 
-	return nil
+	if event.IsMediaProcessed {
+		return nil
+	}
+
+	return h.CMSService.ProcessContent(event.ID, event.MediaUrl)
 }

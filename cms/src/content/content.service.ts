@@ -76,6 +76,8 @@ export class ContentService {
       const newContent = await oldContent.update({
         ...input,
         tags: input.tags ?? oldContent.tags,
+        isMediaProcessed:
+          oldContent.isMediaProcessed && oldContent.mediaUrl === input.mediaUrl, // If the media url changes, we need to reprocess the media
       });
 
       await this.outboxService.addEvent(
@@ -88,10 +90,7 @@ export class ContentService {
     });
   }
 
-  async markAsProcessed(
-    id: string,
-    input: MarkAsProcessedDto,
-  ) {
+  async markAsProcessed(id: string, input: MarkAsProcessedDto) {
     const oldContent = await this.findById(id);
 
     return this.sequelize.transaction(async (transaction) => {

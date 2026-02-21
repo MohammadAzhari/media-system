@@ -5,6 +5,7 @@ import (
 
 	"github.com/MohammadAzhari/media-system/media-processor/consumer"
 	"github.com/MohammadAzhari/media-system/media-processor/handler"
+	"github.com/MohammadAzhari/media-system/media-processor/services"
 	"github.com/spf13/viper"
 )
 
@@ -15,8 +16,14 @@ func main() {
 	}
 
 	consumer := consumer.NewConsumer(config.KafkaHost)
-	consumer.Start("content.created", &handler.ContentCreatedHandler{})
-	consumer.Start("content.updated", &handler.ContentUpdatedHandler{})
+
+	cmsService := services.NewCMSService(config.CmsAddress)
+
+	createdHandler := handler.NewContentCreatedHandler(cmsService)
+	updatedHandler := handler.NewContentUpdatedHandler(cmsService)
+
+	consumer.Start("content.created", createdHandler)
+	consumer.Start("content.updated", updatedHandler)
 
 	select {}
 }
