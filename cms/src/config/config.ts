@@ -1,5 +1,5 @@
 export const config = {
-  port: process.env.PORT ?? 3000,
+  port: process.env.PORT ?? 4433,
   db: {
     host: process.env.DB_HOST ?? 'localhost',
     port: Number.parseInt(process.env.DB_PORT ?? '5432', 10),
@@ -8,7 +8,7 @@ export const config = {
     name: process.env.DB_NAME ?? 'cms',
   },
   kafka: {
-    brokers: (process.env.KAFKA_BROKERS ?? 'localhost:9092').split(','),
+    brokers: (process.env.KAFKA_BROKERS ?? 'localhost:9093').split(','),
     clientId: process.env.KAFKA_CLIENT_ID ?? 'cms',
   },
 } as const;

@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { OutboxEvent } from './models/outbox.model';
 import { KafkaService } from '../kafka/kafka.service';
@@ -10,14 +9,14 @@ export class OutboxProcessorService {
   private readonly logger = new Logger(OutboxProcessorService.name);
 
   constructor(
-    @InjectModel(OutboxEvent)
-    private readonly outboxModel: typeof OutboxEvent,
     private readonly kafkaService: KafkaService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
   async processOutbox() {
-    const events = await this.outboxModel.findAll({
+    this.logger.log('Processing outbox events');
+
+    const events = await OutboxEvent.findAll({
       where: { processed: false },
       limit: 100,
       order: [['createdAt', 'ASC']],
@@ -46,7 +45,7 @@ export class OutboxProcessorService {
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanupProcessedEvents() {
-    const deleted = await this.outboxModel.destroy({
+    const deleted = await OutboxEvent.destroy({
       where: {
         processed: true,
         processedAt: {

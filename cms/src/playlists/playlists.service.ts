@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Op, Sequelize, type WhereOptions } from 'sequelize';
+import { Op, type WhereOptions } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
 import { Content } from '../content/models/content.model';
 import { getPagination } from '../utils/pagination';
 import { FindAllPlaylistsDto } from './dto/find-all-playlists.dto';

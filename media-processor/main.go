@@ -15,15 +15,16 @@ func main() {
 		log.Fatal("Could not load config: ", err)
 	}
 
-	consumer := consumer.NewConsumer(config.KafkaHost)
+	contentCreatedConsumer := consumer.NewConsumer(config.KafkaHost, "content-created")
+	contentUpdatedConsumer := consumer.NewConsumer(config.KafkaHost, "content-updated")
 
 	cmsService := services.NewCMSService(config.CmsAddress)
 
 	createdHandler := handler.NewContentCreatedHandler(cmsService)
 	updatedHandler := handler.NewContentUpdatedHandler(cmsService)
 
-	consumer.Start("content.created", createdHandler)
-	consumer.Start("content.updated", updatedHandler)
+	go contentCreatedConsumer.Start("content.created", createdHandler)
+	go contentUpdatedConsumer.Start("content.updated", updatedHandler)
 
 	select {}
 }

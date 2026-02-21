@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Op, Sequelize, type WhereOptions } from 'sequelize';
+import { Op, type WhereOptions } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
 import { getPagination } from '../utils/pagination';
 import { Content, type ContentAttributes } from './models/content.model';
 import { CreateContentDto } from './dto/create-content.dto';

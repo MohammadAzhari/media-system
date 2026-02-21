@@ -12,11 +12,7 @@ type Consumer struct {
 	group sarama.ConsumerGroup
 }
 
-const (
-	groupID = "media-processor"
-)
-
-func NewConsumer(kafkaHost string) *Consumer {
+func NewConsumer(kafkaHost string, groupID string) *Consumer {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
@@ -44,6 +40,7 @@ func NewConsumer(kafkaHost string) *Consumer {
 }
 
 func (c *Consumer) Start(topic string, handler EventHandler) {
+	log.Println("Starting consumer for topic: ", topic)
 	ctx := context.Background()
 	go func() {
 		for {

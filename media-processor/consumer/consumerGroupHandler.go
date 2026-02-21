@@ -25,6 +25,7 @@ func (ConsumerGroupHandler) Cleanup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (h ConsumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	log.Println("Consuming messages from topic: ", claim.Topic())
 	for msg := range claim.Messages() {
 		key := string(msg.Key)
 		log.Printf("Message claimed: key=%s topic=%q partition=%d offset=%d\n", key, msg.Topic, msg.Partition, msg.Offset)

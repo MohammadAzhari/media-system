@@ -11,6 +11,7 @@ import { UploadModule } from './upload/upload.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { OutboxEvent } from './outbox/models/outbox.model'
+import { ScheduleModule } from '@nestjs/schedule'
 
 @Module({
   imports: [
@@ -26,11 +27,12 @@ import { OutboxEvent } from './outbox/models/outbox.model'
       models: [Content, Playlist, PlaylistContent, OutboxEvent],
       logging: false,
     }),
+    ScheduleModule.forRoot(),
     ContentModule,
     PlaylistsModule,
     UploadModule,
     KafkaModule,
-    OutboxModule,
+    OutboxModule
   ],
   controllers: [AppController],
   providers: [],

@@ -4,12 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
-	"sync"
 
 	"github.com/MohammadAzhari/media-system/media-processor/transcoder"
 )
@@ -28,102 +23,14 @@ func (s *CMSService) ProcessContent(id, url string) error {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	errChan := make(chan error, len(metadata.SuccessScales))
-
-	for _, scale := range metadata.SuccessScales {
-		wg.Add(1)
-		go func(scale string) {
-			defer wg.Done()
-			uploadResp, err := s.uploadFile(metadata.OutputFiles[scale])
-			metadata.OutputFiles[scale] = s.CmsAddress + "/uploads/" + uploadResp.Filename
-			if err != nil {
-				errChan <- err
-			}
-		}(scale)
-	}
-
-	wg.Wait()
-	close(errChan)
-
-	select {
-	case err := <-errChan:
-		return err
-	default:
-	}
-
-	metadataBytes, err := json.Marshal(metadata)
-	if err != nil {
-		return err
-	}
-
-	var processingMetadata map[string]interface{}
-	err = json.Unmarshal(metadataBytes, &processingMetadata)
-	if err != nil {
-		return err
-	}
-
-	return s.markAsProcessed(id, processingMetadata)
-}
-
-type UploadResponse struct {
-	Message string `json:"message"`
-	Filename string `json:"filename"`
-}
-
-func (s *CMSService) uploadFile(filePath string) (*UploadResponse, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var b bytes.Buffer
-	writer := multipart.NewWriter(&b)
-
-	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return nil, err
-	}
-
-	writer.Close()
-
-	req, err := http.NewRequest("POST", s.CmsAddress+"/upload/single", &b)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("upload failed with status %d", resp.StatusCode)
-	}
-
-	var uploadResp UploadResponse
-	err = json.NewDecoder(resp.Body).Decode(&uploadResp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &uploadResp, nil
+	return s.markAsProcessed(id, metadata)
 }
 
 type MarkAsProcessedRequest struct {
-	ProcessingMetadata map[string]interface{} `json:"processingMetadata"`
+	ProcessingMetadata *transcoder.VideoMetadata `json:"processingMetadata"`
 }
 
-func (s *CMSService) markAsProcessed(id string, processingMetadata map[string]interface{}) error {
+func (s *CMSService) markAsProcessed(id string, processingMetadata *transcoder.VideoMetadata) error {
 	reqBody := MarkAsProcessedRequest{
 		ProcessingMetadata: processingMetadata,
 	}
@@ -133,7 +40,7 @@ func (s *CMSService) markAsProcessed(id string, processingMetadata map[string]in
 		return err
 	}
 
-	url := fmt.Sprintf("%s/content/%s/mark-as-processed", s.CmsAddress, id)
+	url := fmt.Sprintf("%s/contents/%s/mark-as-processed", s.CmsAddress, id)
 	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
